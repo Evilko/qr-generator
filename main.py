@@ -1,82 +1,117 @@
 import tkinter as tk
 from tkinter import ttk
+import qrcode
+from pathlib import *
+
+DEFAULT_PATH = Path.cwd() / 'result'
 
 
 class MainWindow:
+
+    # FIXME: Допилить адаптивность дизайна главного окна
+    # TODO: Автоматическая вставка ссылок из буфера обмена при его изменении
+    # TODO: Добавить настройки генерации qr-кодов:
+    #  1. Само окно с выбором настроек генерации
+    #  2. Выбор пути для сохранения кодов
+    #  3?. Разные шаблоны для имён итоговых файлов
+    #  4?. Превью для настроек
+
     def __init__(self, root):
-        root.title('Qr-генератор')
-        mainframe = ttk.Frame(root).grid(row=0, column=0)
+        self.root = root
+        self.root.title('Qr-генератор')
+        self.links_list = []
+        self.links_list_var = tk.StringVar(value=self.links_list)
 
-        frm_linklist = ttk.Frame(mainframe).grid(row=0, column=0, columnspan=2)
-        btn_remove = ttk.Button(frm_linklist, text='Удалить', command=self.remove)
-        btn_clear = ttk.Button(frm_linklist, text='Очистить список', command=self.clear)
-        frm_list = ttk.Frame(frm_linklist)
-        btn_remove.grid(row=0, column=0)
-        btn_clear.grid(row=0, column=1)
-        frm_list.grid(row=1, column=0, columnspan=2)
+        self.qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_H,
+            box_size=10,
+            border=4,
+        )
 
-        btn_generation = ttk.Button(mainframe, text='Сгенерировать\nкоды')
-        btn_options = ttk.Button(mainframe, text='Опции')
-        btn_generation.grid(row=1, column=0)
-        btn_options.grid(row=1, column=1)
+        ttk.Style().configure('Gen.TButton', justify='center')
+        ttk.Style().configure('Credits.TLabel', foreground='grey')
+
+        # Главный фрейм окна
+        self.mainframe = ttk.Frame(root, padding=5)
+
+        # Основной фрейм, в котором будет список ссылок и кнопки управления списком
+        self.frm_links = ttk.Frame(self.mainframe, padding=3)
+
+        # Фрейм с кнопками для списка
+        self.frm_links_buttons = ttk.Frame(self.frm_links)
+
+        # Кнопки
+        self.btn_add = ttk.Button(self.frm_links_buttons, text='Добавить', command=self.add_link)
+        self.btn_remove = ttk.Button(self.frm_links_buttons, text='Удалить', command=self.remove)
+        self.btn_clear = ttk.Button(self.frm_links_buttons, text='Очистить список', command=self.clear_list)
+
+        # Фрейм со списком ссылок
+        self.frm_links_list = ttk.Frame(self.frm_links, width=300, height=400)
+        self.links_listbox = tk.Listbox(self.frm_links_list, height=10, listvariable=self.links_list_var)
+        self.links_scroll = ttk.Scrollbar(self.frm_links_list, orient=tk.VERTICAL, command=self.links_listbox.yview)
+        self.links_listbox['yscrollcommand'] = self.links_scroll.set
+
+        # Фрейм с кнопками для генерации кодов и вызова окна настроек
+        self.frm_process_buttons = ttk.Frame(self.mainframe)
+
+        # Кнопки генерации и настроек
+        self.btn_generate = ttk.Button(self.frm_process_buttons, text='Генерировать\nкод',
+                                       command=self.generate, style='Gen.TButton')
+        self.btn_options = ttk.Button(self.frm_process_buttons, text='Опции')
+
+        # Разработчик =)
+        self.lbl_credits = ttk.Label(self.mainframe, text='\u00A9 Андриясов А. А., 2021', style='Credits.TLabel')
+
+        self.draw()
 
     def remove(self):
-        pass
+        selected_positions = self.links_listbox.curselection()
+        if len(selected_positions) > 0:
+            for pos in selected_positions:
+                self.links_list.pop(pos)
+            self.links_list_var.set(self.links_list)
 
-    def clear(self):
-        pass
+    def add_link(self):
+        content = self.root.clipboard_get()
+        if content not in self.links_list and content.startswith('http'):
+            self.links_list.append(content)
+            self.links_list_var.set(self.links_list)
+
+    def clear_list(self):
+        self.links_list.clear()
+        self.links_list_var.set(self.links_list)
+
+    def generate(self):
+        if len(self.links_list) == 0:
+            return
+        if not DEFAULT_PATH.exists():
+            DEFAULT_PATH.mkdir()
+        for index, link in enumerate(self.links_list):
+            img = qrcode.make(link)
+            img.save(DEFAULT_PATH / f'{index}.png')
+
+    def draw(self):
+        self.mainframe.grid(row=0, column=0, sticky='wnes')
+        self.frm_links.grid(row=0, column=0)
+        self.frm_links_buttons.grid(row=0, column=0, sticky='w')
+        self.btn_add.grid(row=0, column=0)
+        self.btn_remove.grid(row=0, column=1, padx=(3, 3))
+        self.btn_clear.grid(row=0, column=2)
+        self.frm_links_list.grid(row=1, column=0, pady=5)
+        self.links_listbox.grid(row=0, column=0)
+        self.links_scroll.grid(row=0, column=1, sticky='ns')
+        self.frm_process_buttons.grid(row=1, column=0)
+        self.btn_generate.grid(row=0, column=0, padx=(0, 3))
+        self.btn_options.grid(row=0, column=1, sticky='ns')
+        self.lbl_credits.grid(row=2, column=0, sticky='es', pady=(10, 0))
 
 
 def main():
     root = tk.Tk()
-    main_window = MainWindow(root)
+    MainWindow(root)
     root.mainloop()
 
 
 if __name__ == '__main__':
     main()
-
-# from tkinter import *
-# from tkinter import ttk
-#
-#
-# class FeetToMeters:
-#
-#     def __init__(self, root):
-#
-#         root.title("Feet to Meters")
-#
-#         mainframe = ttk.Frame(root, padding="3 3 12 12")
-#         mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
-#         root.columnconfigure(0, weight=1)
-#         root.rowconfigure(0, weight=1)
-#
-#         self.feet = StringVar()
-#         feet_entry = ttk.Entry(mainframe, width=7, textvariable=self.feet)
-#         feet_entry.grid(column=2, row=1, sticky=(W, E))
-#         self.meters = StringVar()
-#
-#         ttk.Label(mainframe, textvariable=self.meters).grid(column=2, row=2, sticky=(W, E))
-#         ttk.Button(mainframe, text="Calculate", command=self.calculate).grid(column=3, row=3, sticky=W)
-#
-#         ttk.Label(mainframe, text="feet").grid(column=3, row=1, sticky=W)
-#         ttk.Label(mainframe, text="is equivalent to").grid(column=1, row=2, sticky=E)
-#         ttk.Label(mainframe, text="meters").grid(column=3, row=2, sticky=W)
-#
-#         for child in mainframe.winfo_children():
-#             child.grid_configure(padx=5, pady=5)
-#
-#         feet_entry.focus()
-#         root.bind("<Return>", self.calculate)
-#
-#     def calculate(self, *args):
-#         try:
-#             value = float(self.feet.get())
-#             self.meters.set(int(0.3048 * value * 10000.0 + 0.5) / 10000.0)
-#         except ValueError:
-#             pass
-#
-#
-# root = Tk()
-# FeetToMeters(root)
-# root.mainloop()
