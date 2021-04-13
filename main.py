@@ -15,12 +15,14 @@ class MainWindow:
     #  2. Выбор пути для сохранения кодов
     #  3?. Разные шаблоны для имён итоговых файлов
     #  4?. Превью для настроек
+    # TODO: Добавить инфы в README.md
 
     def __init__(self, root):
         self.root = root
-        self.root.title('Qr-генератор')
+        self.root.title('QR-генератор')
         self.links_list = []
         self.links_list_var = tk.StringVar(value=self.links_list)
+        self.root.geometry('600x400+200+100')
 
         self.qr = qrcode.QRCode(
             version=1,
@@ -31,12 +33,19 @@ class MainWindow:
 
         ttk.Style().configure('Gen.TButton', justify='center')
         ttk.Style().configure('Credits.TLabel', foreground='grey')
+        ttk.Style().configure('Red.TFrame', background='red')
+        ttk.Style().configure('Green.TFrame', background='green')
+        ttk.Style().configure('Blue.TFrame', background='blue')
 
         # Главный фрейм окна
-        self.mainframe = ttk.Frame(root, padding=5)
+        self.mainframe = ttk.Frame(root, padding=5, style='Green.TFrame')
+        self.root.rowconfigure(0, weight=1)
+        self.root.columnconfigure(0, weight=1)
+        self.mainframe.rowconfigure(0, weight=1)
+        self.mainframe.columnconfigure(0, weight=1)
 
         # Основной фрейм, в котором будет список ссылок и кнопки управления списком
-        self.frm_links = ttk.Frame(self.mainframe, padding=3)
+        self.frm_links = ttk.Frame(self.mainframe, padding=3, style='Red.TFrame')
 
         # Фрейм с кнопками для списка
         self.frm_links_buttons = ttk.Frame(self.frm_links)
@@ -47,13 +56,13 @@ class MainWindow:
         self.btn_clear = ttk.Button(self.frm_links_buttons, text='Очистить список', command=self.clear_list)
 
         # Фрейм со списком ссылок
-        self.frm_links_list = ttk.Frame(self.frm_links, width=300, height=400)
+        self.frm_links_list = ttk.Frame(self.frm_links, width=300, height=400,style='Green.TFrame')
         self.links_listbox = tk.Listbox(self.frm_links_list, height=10, listvariable=self.links_list_var)
         self.links_scroll = ttk.Scrollbar(self.frm_links_list, orient=tk.VERTICAL, command=self.links_listbox.yview)
         self.links_listbox['yscrollcommand'] = self.links_scroll.set
 
         # Фрейм с кнопками для генерации кодов и вызова окна настроек
-        self.frm_process_buttons = ttk.Frame(self.mainframe)
+        self.frm_process_buttons = ttk.Frame(self.mainframe, style='Blue.TFrame')
 
         # Кнопки генерации и настроек
         self.btn_generate = ttk.Button(self.frm_process_buttons, text='Генерировать\nкод',
@@ -93,15 +102,15 @@ class MainWindow:
 
     def draw(self):
         self.mainframe.grid(row=0, column=0, sticky='wnes')
-        self.frm_links.grid(row=0, column=0)
+        self.frm_links.grid(row=0, column=0, sticky='wnes')
         self.frm_links_buttons.grid(row=0, column=0, sticky='w')
         self.btn_add.grid(row=0, column=0)
         self.btn_remove.grid(row=0, column=1, padx=(3, 3))
         self.btn_clear.grid(row=0, column=2)
-        self.frm_links_list.grid(row=1, column=0, pady=5)
+        self.frm_links_list.grid(row=1, column=0, pady=5, sticky='ew')
         self.links_listbox.grid(row=0, column=0)
         self.links_scroll.grid(row=0, column=1, sticky='ns')
-        self.frm_process_buttons.grid(row=1, column=0)
+        self.frm_process_buttons.grid(row=1, column=0, sticky='ew')
         self.btn_generate.grid(row=0, column=0, padx=(0, 3))
         self.btn_options.grid(row=0, column=1, sticky='ns')
         self.lbl_credits.grid(row=2, column=0, sticky='es', pady=(10, 0))
